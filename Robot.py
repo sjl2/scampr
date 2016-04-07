@@ -4,6 +4,7 @@ from Adafruit_MotorHAT import Adafruit_MotorHAT
 from Adafruit_MotorHAT import Adafruit_DCMotor
 from Adafruit_MotorHAT import Adafruit_StepperMotor
 
+import threading
 import time
 import atexit
 import Maze
@@ -21,12 +22,17 @@ SOUTH = 'S'
 # create a default object, no changes to I2C address or frequency
 shield = Adafruit_MotorHAT()
 
+# create empty threads (these will hold the stepper 1 and 2 threads)
+threadL = threading.Thread()
+threadR = threading.Thread()
+
 # Motor Initialization
 left = shield.getStepper(200, 1)  	# 200 steps/rev, motor port #1
 right = shield.getStepper(200, 2)
 
-left.setSpeed(30)  		# 30 RPM
+left.setSpeed(30)  			# 30 RPM
 right.setSpeed(30)  		# 30 RPM
+step_style = Adafruit_MotorHAT.INTERLEAVE
 
 # Remote Sensining Initialization
 remote_sensing = RemoteSensing()
@@ -34,8 +40,10 @@ remote_sensing = RemoteSensing()
 # Robot Initialization
 scampr = Robot(left, right, remote_sensing)
 
+scampr.stepForward(100)
+scampr.turnLeft()
+scampr.turnRight()
 
-scampr.start(); 
 atexit.register(turnOffMotors)
 
 #######################################################################
@@ -49,7 +57,7 @@ class Robot(object):
         self.current_direction = EAST
 
     def isSolved(self): 
-        return (row == 7 || row == 8) && (col == 7 || col == 8)    
+        return (row == 7 or row == 8) and (col == 7 or col == 8)    
 
     def isVisited(self, direction):
         if direction is NORTH:
@@ -106,6 +114,32 @@ class Robot(object):
         self.maze[row][col].visited = True
 
 
+    def stepForward(steps):
+        threadL = threading.Thread(target=stepper_worker, args=(left, steps, Adafruit_MotorHAT.FORWARD, step_style))
+	threadR = threading.Thread(target=stepper_worker, args=(right, steps, Adafruit_MotorHAT.FORWARD, step_style))
+	threadL.start()
+    	threadR.start()
+
+    def rotate(cw, steps):
+        left_dir = Adafruit_MotorHAT.FORWARD
+        right_dir = Adafruit_MotorHAT.BACKWARD
+        
+        if (not cw):
+            left_dir = Adafruit_MotorHAT.BACKWARD
+            right_dir = Adafruit_MotorHAT.FORWARD
+        
+        threadL = threading.Thread(target=stepper_worker, args=(left, steps, left_dir, step_style))
+        threadR = threading.Thread(target=stepper_worker, args=(right, steps, right_dir, step_style))
+        threadL.start()
+        threadR.start()
+
+    def turnLeft():
+    	rotate(false, 200)
+
+    def turnRight():
+    	rotate(true, 200)
+
+
 class RemoteSensing(object):
 
 
@@ -144,4 +178,9 @@ def getOppositeDirection(direction):
     else:
         raise ValueError(direction 
                 + ' is not a valid direction (N, W, E, S).')
+
+def stepper_worker(stepper, numsteps, direction, style):
+	#print("Steppin!")
+	stepper.step(numsteps, direction, style)
+	#print("Done")
 
