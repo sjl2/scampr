@@ -1,15 +1,22 @@
 #!/usr/bin/python
 #import Adafruit_MotorHAT, Adafruit_DCMotor, Adafruit_Stepper 
-from Adafruit_MotorHAT import Adafruit_MotorHAT, Adafruit_DCMotor, Adafruit_StepperMotor
+from Adafruit_MotorHAT import Adafruit_MotorHAT
+from Adafruit_MotorHAT import Adafruit_DCMotor
+from Adafruit_MotorHAT import Adafruit_StepperMotor
 
 import time
 import atexit
 import Maze
 import Cell
 
-###########################################################################
+NORTH = 'N'
+WEST = 'W'
+EAST = 'E'
+SOUTH = 'S'
+
+#######################################################################
 # MAIN
-###########################################################################
+#######################################################################
 
 # create a default object, no changes to I2C address or frequency
 shield = Adafruit_MotorHAT()
@@ -31,39 +38,91 @@ scampr = Robot(left, right, remote_sensing)
 scampr.start(); 
 atexit.register(turnOffMotors)
 
-###########################################################################
+#######################################################################
 
 class Robot(object):
+    row = 0
+    col = 0
 
-    __init__(self, left_motor, right_motor, remote_sensing):
-        self.row = 0 
-        self.col = 0 
-        self.maze = [[Cell() for x in range(16)] for x in range(16)]; 
-        self.current_direction = "E";
+    def __init__(self, left_motor, right_motor, remote_sensing):
+        self.maze = [[Cell() for x in range(16)] for x in range(16)] 
+        self.current_direction = EAST
 
     def isSolved(self): 
         return (row == 7 || row == 8) && (col == 7 || col == 8)    
 
-    def isVisited():
-        return self.maze[row][col].visited; 
+    def isVisited(self, direction):
+        if direction is NORTH:
+            return self.maze[row - 1][col].visited
+        elif direction is WEST:
+            return self.maze[row][col - 1].visited
+        elif direction is EAST:
+            return self.maze[row][col + 1].visited
+        elif direction is SOUTH:
+            return self.maze[row + 1][col].visited
+        else:
+            raise ValueError(direction 
+                    + ' is not a valid direction (N, W, E, S).')
     
-    def isWall(direction):
-        return self.maze[row][col].walls[direction]; 
+    def isWall(self, direction):
+        return self.maze[row][col].walls[direction] 
+
+    def isDeadEnd(self, direction):
+        if direction is NORTH:
+            return self.maze[row - 1][col].deadEnd
+        elif direction is WEST:
+            return self.maze[row][col - 1].deadEnd
+        elif direction is EAST:
+            return self.maze[row][col + 1].deadEnd
+        elif direction is SOUTH:
+            return self.maze[row + 1][col].deadEnd
+        else:
+            raise ValueError(direction
+                    + ' is not a valid direction (N, W, E, S).')
+
+    # Set the Back Pointer for the current cell to the cell in the 
+    # direction direction. 
+    def setBackPointer(self, direction):
+        if direction is NORTH:
+            self.maze[row][col].prevRow = row - 1
+            self.maze[row][col].prevCol = col
+        elif direction is WEST:
+            self.maze[row][col].prevRow = row
+            self.maze[row][col].prevCol = col - 1
+        elif direction is EAST:
+            self.maze[row][col].prevRow = row
+            self.maze[row][col].prevCol = col + 1
+        elif direction is SOUTH:
+            self.maze[row][col].prevRow = row + 1
+            self.maze[row][col].prevCol = col
+        else:
+            raise ValueError(direction 
+                    + ' is not a valid direction (N, W, E, S).')
+    
+    def currIsDeadEnd(self):
+        self.maze[row][col].deadEnd = True
+
+    def currIsVisited(self):
+        self.maze[row][col].visited = True
+
 
 class RemoteSensing(object):
+
+
 
 
 class Cell(object):
     def __init__(self):
         self.walls = {
-            NORTH : False,
-            WEST  : False, 
-            EAST  : False,
-            SOUTH : False
+            NORTH : True,
+            WEST  : True, 
+            EAST  : True,
+            SOUTH : True
         }
-        self.backPointer = ""; 
-        self.visited = False;
-        self.deadEnd = False; 
+        self.prevRow = -1; 
+        self.prevCol = -1; 
+        self.visited = False
+        self.deadEnd = False 
 
 
 # recommended for auto-disabling motors on shutdown!
@@ -73,21 +132,16 @@ def turnOffMotors():
 	shield.getMotor(3).run(Adafruit_MotorHAT.RELEASE)
 	shield.getMotor(4).run(Adafruit_MotorHAT.RELEASE)
 
+def getOppositeDirection(direction):
+    if direction is NORTH:
+        return SOUTH
+    elif direction is WEST:
+        return EAST
+    elif direction is EAST:
+        return WEST
+    elif direction is SOUTH:
+        return NORTH
+    else:
+        raise ValueError(direction 
+                + ' is not a valid direction (N, W, E, S).')
 
-
-#while (True):
-#	print("Single coil steps")
-#	myStepper.step(100, Adafruit_MotorHAT.FORWARD,  Adafruit_MotorHAT.SINGLE)
-#	myStepper.step(100, Adafruit_MotorHAT.BACKWARD, Adafruit_MotorHAT.SINGLE)
-
-#	print("Double coil steps")
-#	myStepper.step(100, Adafruit_MotorHAT.FORWARD,  Adafruit_MotorHAT.DOUBLE)
-#	myStepper.step(100, Adafruit_MotorHAT.BACKWARD, Adafruit_MotorHAT.DOUBLE)
-#
-#	print("Interleaved coil steps")
-#	myStepper.step(100, Adafruit_MotorHAT.FORWARD,  Adafruit_MotorHAT.INTERLEAVE)
-#	myStepper.step(100, Adafruit_MotorHAT.BACKWARD, Adafruit_MotorHAT.INTERLEAVE)
-#
-#	print("Microsteps")
-#	myStepper.step(100, Adafruit_MotorHAT.FORWARD,  Adafruit_MotorHAT.MICROSTEP)
-#	myStepper.step(100, Adafruit_MotorHAT.BACKWARD, Adafruit_MotorHAT.MICROSTEP)
