@@ -35,14 +35,35 @@ atexit.register(turnOffMotors)
 
 class Robot(object):
 
-    def __init__(self, left_motor, right_motor, remote_sensing):
-    	print "Initialized Robot!";
+    __init__(self, left_motor, right_motor, remote_sensing):
+        self.row = 0 
+        self.col = 0 
+        self.maze = [[Cell() for x in range(16)] for x in range(16)]; 
+        self.current_direction = "E";
 
+    def isSolved(self): 
+        return (row == 7 || row == 8) && (col == 7 || col == 8)    
+
+    def isVisited():
+        return self.maze[row][col].visited; 
+    
+    def isWall(direction):
+        return self.maze[row][col].walls[direction]; 
 
 class RemoteSensing(object):
 
-	def __init__():
-		print "Remotely Sense things";
+
+class Cell(object):
+    def __init__(self):
+        self.walls = {
+            NORTH : False,
+            WEST  : False, 
+            EAST  : False,
+            SOUTH : False
+        }
+        self.backPointer = ""; 
+        self.visited = False;
+        self.deadEnd = False; 
 
 
 # recommended for auto-disabling motors on shutdown!
