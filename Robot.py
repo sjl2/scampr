@@ -1,8 +1,8 @@
 #!/usr/bin/python
 #import Adafruit_MotorHAT, Adafruit_DCMotor, Adafruit_Stepper 
-from Adafruit_MotorHAT import Adafruit_MotorHAT
-from Adafruit_MotorHAT import Adafruit_DCMotor
-from Adafruit_MotorHAT import Adafruit_StepperMotor
+from MotorShield import MotorShield
+from MotorShield import StepperMotor
+from MotorShield import DCMotor
 
 import threading
 import time
@@ -16,7 +16,7 @@ EAST = 'E'
 SOUTH = 'S'
 DIRECTIONS = [NORTH, WEST, EAST, SOUTH]
 
-RPM = 50
+RPM = 80
 NINETY_DEGREES = 200 # STEPS
 CELL_LENGTH = 400 # STEPS
 
@@ -24,15 +24,15 @@ CELL_LENGTH = 400 # STEPS
 
 # recommended for auto-disabling motors on shutdown!
 def turnOffMotors():
-	shield.getMotor(1).run(Adafruit_MotorHAT.RELEASE)
-	shield.getMotor(2).run(Adafruit_MotorHAT.RELEASE)
-	shield.getMotor(3).run(Adafruit_MotorHAT.RELEASE)
-	shield.getMotor(4).run(Adafruit_MotorHAT.RELEASE)
+	shield.getMotor(1).run(MotorShield.RELEASE)
+	shield.getMotor(2).run(MotorShield.RELEASE)
+	shield.getMotor(3).run(MotorShield.RELEASE)
+	shield.getMotor(4).run(MotorShield.RELEASE)
 
 atexit.register(turnOffMotors)
 
 # create a default object, no changes to I2C address or frequency
-shield = Adafruit_MotorHAT()
+shield = MotorShield()
 
 # create empty threads (these will hold the stepper 1 and 2 threads)
 threadL = threading.Thread()
@@ -44,9 +44,9 @@ threadR.daemon = True
 left = shield.getStepper(200, 1)  	# 200 steps/rev, motor port #1
 right = shield.getStepper(200, 2)
 
-left.setSpeed(RPM)  			# 30 RPM
-right.setSpeed(RPM)  		        # 30 RPM
-step_style = Adafruit_MotorHAT.SINGLE   #INTERLEAVE
+left.setSpeed(RPM)
+right.setSpeed(RPM)
+step_style = MotorShield.MICROSTEP   #INTERLEAVE
 
 class RemoteSensing(object):
     def __init__(self):
@@ -148,8 +148,14 @@ class Robot(object):
         global threadR
 
         print('Stepping Forward')
-        threadL = threading.Thread(target=stepper_worker, args=(left, steps, Adafruit_MotorHAT.FORWARD, step_style))
-	threadR = threading.Thread(target=stepper_worker, args=(right, steps, Adafruit_MotorHAT.FORWARD, step_style))
+        threadL = threading.Thread(
+                target=stepper_worker, 
+                args=(left, steps, MotorShield.FORWARD, step_style)
+                )
+	threadR = threading.Thread(
+                target=stepper_worker, 
+                args=(right, steps, MotorShield.FORWARD, step_style)
+                )
         
         threadL.daemon = True
         threadR.daemon = True
@@ -169,15 +175,21 @@ class Robot(object):
         global threadR
 
         print('Rotating')
-        left_dir = Adafruit_MotorHAT.FORWARD
-        right_dir = Adafruit_MotorHAT.BACKWARD
+        left_dir = MotorShield.FORWARD
+        right_dir = MotorShield.BACKWARD
         
         if not cw:
-            left_dir = Adafruit_MotorHAT.BACKWARD
-            right_dir = Adafruit_MotorHAT.FORWARD
+            left_dir = MotorShield.BACKWARD
+            right_dir = MotorShield.FORWARD
         
-        threadL = threading.Thread(target=stepper_worker, args=(left, steps, left_dir, step_style))
-        threadR = threading.Thread(target=stepper_worker, args=(right, steps, right_dir, step_style))
+        threadL = threading.Thread(
+                target=stepper_worker, 
+                args=(left, steps, left_dir, step_style)
+                )
+        threadR = threading.Thread(
+                target=stepper_worker, 
+                args=(right, steps, right_dir, step_style)
+                )
 
         threadL.daemon = True
         threadR.daemon = True
@@ -283,7 +295,8 @@ class Robot(object):
                 self.currVisited()
             
             for dir in DIRECTIONS:
-                if not (self.isWall(dir) or dir is self.getBP() or isEV(dir) or isVisited(dir)):
+                if not (self.isWall(dir) or dir is self.getBP() 
+                        or isEV(dir) or isVisited(dir)):
                     move(dir)
                     setBP(oppositeDirection(dir))
                     keepExploring = True
@@ -304,7 +317,7 @@ class Robot(object):
             
             for dir in DIRECTIONS:
                 # TODO Why did you check if the room you're pointing at points back?
-                if not (self.isWall(dir) or dir is oppositeDirection(prevBP) or self.isEV(dir)) and self.isVisited(dir):
+                if not (self.isWall(dir) or self.isEV(dir) or dir is oppositeDirection(prevBP)) and self.isVisited(dir):
                     currBP = dir
                     break
 
@@ -329,7 +342,7 @@ class Robot(object):
 # Robot Initialization
 scampr = Robot()
 
-scampr.stepForward(200)
+scampr.stepForward(800)
 #scampr.turnLeft()
 #scampr.turnRight()
 
