@@ -35,10 +35,14 @@ atexit.register(turnOffMotors)
 
 class Robot(object):
 
-    __init__(self, left_motor, right_motor, remote_sensing):
+    def __init__(self, left_motor, right_motor, remote_sensing):
+    	print "Initialized Robot!";
 
 
 class RemoteSensing(object):
+
+	def __init__():
+		print "Remotely Sense things";
 
 
 # recommended for auto-disabling motors on shutdown!
