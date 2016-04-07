@@ -2,6 +2,7 @@
 #import Adafruit_MotorHAT, Adafruit_DCMotor, Adafruit_Stepper 
 from Adafruit_MotorHAT import Adafruit_MotorHAT, Adafruit_DCMotor, Adafruit_StepperMotor
 
+import threading
 import time
 import atexit
 import Maze
@@ -14,12 +15,17 @@ import Cell
 # create a default object, no changes to I2C address or frequency
 shield = Adafruit_MotorHAT()
 
+# create empty threads (these will hold the stepper 1 and 2 threads)
+threadL = threading.Thread()
+threadR = threading.Thread()
+
 # Motor Initialization
 left = shield.getStepper(200, 1)  	# 200 steps/rev, motor port #1
 right = shield.getStepper(200, 2)
 
-left.setSpeed(30)  		# 30 RPM
+left.setSpeed(30)  			# 30 RPM
 right.setSpeed(30)  		# 30 RPM
+step_style = Adafruit_MotorHAT.INTERLEAVE
 
 # Remote Sensining Initialization
 remote_sensing = RemoteSensing()
@@ -50,6 +56,30 @@ class Robot(object):
     def isWall(direction):
         return self.maze[row][col].walls[direction]; 
 
+    def stepForward(steps):
+    	threadL = threading.Thread(target=stepper_worker, args=(left, steps, Adafruit_MotorHAT.FORWARD, step_style))
+		threadR = threading.Thread(target=stepper_worker, args=(right, steps, Adafruit_MotorHAT.FORWARD, step_style))
+		threadL.start()
+    	threadR.start()
+
+   	def rotate(cw, steps):
+   		left_dir = Adafruit_MotorHAT.FORWARD
+   		right_dir = Adafruit_MotorHAT.BACKWARD
+   		if (not cw):
+   			left_dir = Adafruit_MotorHAT.BACKWARD
+   			right_dir = Adafruit_MotorHAT.FORWARD
+   		threadL = threading.Thread(target=stepper_worker, args=(left, steps, left_dir, step_style))
+		threadR = threading.Thread(target=stepper_worker, args=(right, steps, right_dir, step_style))
+		threadL.start()
+    	threadR.start()
+
+    def turnLeft():
+    	rotate(false, 200)
+
+    def turnRight():
+    	rotate(true, 200)
+
+
 class RemoteSensing(object):
 
 
@@ -73,7 +103,10 @@ def turnOffMotors():
 	shield.getMotor(3).run(Adafruit_MotorHAT.RELEASE)
 	shield.getMotor(4).run(Adafruit_MotorHAT.RELEASE)
 
-
+def stepper_worker(stepper, numsteps, direction, style):
+	#print("Steppin!")
+	stepper.step(numsteps, direction, style)
+	#print("Done")
 
 #while (True):
 #	print("Single coil steps")
