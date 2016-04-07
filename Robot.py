@@ -48,7 +48,7 @@ class Robot(object):
         self.current_direction = "E";
 
     def isSolved(self): 
-        return (row == 7 || row == 8) && (col == 7 || col == 8)    
+        return (row == 7 or row == 8) and (col == 7 or col == 8)    
 
     def isVisited():
         return self.maze[row][col].visited; 
