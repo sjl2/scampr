@@ -100,6 +100,9 @@ class Robot(object):
     def isSolved(self): 
         return (row == 7 or row == 8) and (col == 7 or col == 8)    
     
+    def isVisited(self):
+    	return self.maze[row][col].visited
+    
     def isCurrentVisited(self, direction):
         if direction is NORTH:
             return self.maze[row - 1][col].visited
@@ -282,17 +285,17 @@ class Robot(object):
 
     def wipeAllVisited(self):
         for row in self.maze:
-            for c in row:
-                c.visited = False
+            for cell in row:
+                cell.visited = False
 
     def solveMaze(self):
         # Initial Solve
         keepExploring = False
         while not self.isSolved():
             keepExploring = False
-            if not self.isCurrentVisited():
+            if not self.isVisited():
                 self.updateWalls()
-                self.currVisited()
+                self.setVisited()
             
             for dir in DIRECTIONS:
                 if not (self.isWall(dir) or dir is self.getBP() 
